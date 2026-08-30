@@ -40,6 +40,3 @@ npm run dev
 
 Create `.env` files with the required API keys for MongoDB, Clerk, Stream, JDoodle, and Inngest.
 
-## License
-
-MIT
