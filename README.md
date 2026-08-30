@@ -15,10 +15,15 @@ A full-stack technical interview platform for **1-on-1 coding interviews and sol
 ## Tech Stack
 
 **Frontend:** React, Tailwind CSS, DaisyUI, TanStack Query
+
 **Backend:** Node.js, Express.js, MongoDB
+
 **Auth:** Clerk
+
 **Real-time:** Socket.IO, Stream Chat, Stream Video
+
 **Code Execution:** JDoodle
+
 **Background Jobs:** Inngest
 
 ## Run Locally
