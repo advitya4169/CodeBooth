@@ -3,7 +3,7 @@ import axios from "axios";
 export const executeCode = async (language, code) => {
   try {
     const response = await axios.post(
-      "http://localhost:3000/api/execute",
+      `${import.meta.env.VITE_API_URL}/execute`,
       {
         language:
           language === "python"
