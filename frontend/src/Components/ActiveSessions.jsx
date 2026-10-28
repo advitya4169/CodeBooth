@@ -10,7 +10,7 @@ import {
 import { Link } from "react-router";
 import { getDifficultyBadgeClass } from "../lib/utils";
 
-function ActiveSessions({ sessions, isLoading, isUserInSession }) {
+function ActiveSessions({ sessions, isLoading, isError, error, onRetry }) {
   return (
     <div
       className="
@@ -62,6 +62,16 @@ function ActiveSessions({ sessions, isLoading, isUserInSession }) {
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
               <LoaderIcon className="size-10 animate-spin text-primary" />
+            </div>
+          ) : isError ? (
+            <div className="py-12 text-center" role="alert">
+              <h3 className="text-lg font-semibold">Couldn’t load active rooms</h3>
+              <p className="mt-2 text-sm text-base-content/60">
+                {error?.response?.data?.message || "Check your connection and try again."}
+              </p>
+              <button className="btn btn-outline btn-sm mt-4" onClick={() => onRetry()}>
+                Retry
+              </button>
             </div>
           ) : sessions.length > 0 ? (
             sessions.map((session) => (
@@ -123,8 +133,7 @@ function ActiveSessions({ sessions, isLoading, isUserInSession }) {
                           </span>
                         </div>
 
-                        {session.participant &&
-                        !isUserInSession(session) ? (
+                        {session.participant && !session.isHost && !session.isParticipant ? (
                           <span className="badge badge-error gap-1">
                             🔒 Full
                           </span>
@@ -138,8 +147,7 @@ function ActiveSessions({ sessions, isLoading, isUserInSession }) {
                   </div>
 
                   {/* RIGHT */}
-                  {session.participant &&
-                  !isUserInSession(session) ? (
+                  {session.participant && !session.isHost && !session.isParticipant ? (
                     <button className="btn btn-disabled rounded-xl">
                       Full
                     </button>
@@ -158,7 +166,7 @@ function ActiveSessions({ sessions, isLoading, isUserInSession }) {
                         duration-200
                       "
                     >
-                      {isUserInSession(session)
+                      {session.isHost || session.isParticipant
                         ? "Rejoin"
                         : "Join"}
 

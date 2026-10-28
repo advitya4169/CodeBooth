@@ -41,15 +41,31 @@ export async function createSession(req, res) {
   }
 }
 
-export async function getActiveSessions(_, res) {
+export async function getActiveSessions(req, res) {
   try {
     const sessions = await Session.find({ status: "active" })
-      .populate("host", "name profileImage email clerkId")
-      .populate("participant", "name profileImage email clerkId")
+      .select("problem difficulty host participant status createdAt updatedAt")
+      .populate("host", "name profileImage")
+      .populate("participant", "_id")
       .sort({ createdAt: -1 })
       .limit(20);
 
-    res.status(200).json({ sessions });
+    const visibleSessions = sessions.map((session) => ({
+      _id: session._id,
+      problem: session.problem,
+      difficulty: session.difficulty,
+      status: session.status,
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt,
+      host: session.host
+        ? { name: session.host.name, profileImage: session.host.profileImage }
+        : null,
+      participant: session.participant ? true : null,
+      isHost: session.host?._id.equals(req.user._id) || false,
+      isParticipant: session.participant?._id.equals(req.user._id) || false,
+    }));
+
+    res.status(200).json({ sessions: visibleSessions });
   } catch (error) {
     console.log("Error in getActiveSessions controller:", error.message);
     res.status(500).json({ message: "Internal Server Error" });
@@ -80,8 +96,8 @@ export async function getSessionById(req, res) {
     const { id } = req.params;
 
     const session = await Session.findById(id)
-      .populate("host", "name email profileImage clerkId")
-      .populate("participant", "name email profileImage clerkId");
+      .populate("host", "name profileImage clerkId")
+      .populate("participant", "name profileImage clerkId");
 
     if (!session) return res.status(404).json({ message: "Session not found" });
 

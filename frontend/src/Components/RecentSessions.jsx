@@ -9,7 +9,7 @@ import {
 import { getDifficultyBadgeClass } from "../lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
-function RecentSessions({ sessions, isLoading }) {
+function RecentSessions({ sessions, isLoading, isError, error, onRetry }) {
   return (
     <div
       className="
@@ -48,6 +48,16 @@ function RecentSessions({ sessions, isLoading }) {
           {isLoading ? (
             <div className="col-span-full flex items-center justify-center py-20">
               <Loader className="size-10 animate-spin text-primary" />
+            </div>
+          ) : isError ? (
+            <div className="col-span-full py-12 text-center" role="alert">
+              <h3 className="text-lg font-semibold">Couldn’t load session history</h3>
+              <p className="mt-2 text-sm text-base-content/60">
+                {error?.response?.data?.message || "Check your connection and try again."}
+              </p>
+              <button className="btn btn-outline btn-sm mt-4" onClick={() => onRetry()}>
+                Retry
+              </button>
             </div>
           ) : sessions.length > 0 ? (
             sessions.map((session) => (
