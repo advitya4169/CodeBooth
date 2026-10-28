@@ -55,7 +55,7 @@ function VideoCallUI({ chatClient, channel }) {
       {/* VIDEO SECTION */}
       <div className="flex flex-col gap-4">
         {/* HEADER */}
-        <div className="bg-base-100/70 backdrop-blur-xl border border-base-content/10 rounded-2xl px-4 py-3 flex items-center justify-between shadow-lg">
+        <div className="cb-panel flex items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-2">
             <UsersIcon className="size-5 text-primary" />
 
@@ -87,12 +87,12 @@ function VideoCallUI({ chatClient, channel }) {
         {/* VIDEO */}
         <div
           className={`
-            bg-base-300
-            rounded-2xl
+            bg-neutral
+            rounded-lg
             overflow-hidden
             border
             border-base-content/10
-            shadow-xl
+            shadow-sm
             transition-all
             duration-300
 
@@ -111,7 +111,7 @@ function VideoCallUI({ chatClient, channel }) {
   <ToggleAudioPublishingButton />
   <ToggleVideoPublishingButton />
   <button 
-    className="btn rounded-xl bg-[#19232D]"
+    className="btn btn-neutral btn-sm"
     onClick={() => navigate("/dashboard")}
   >
      <PhoneOff  size={24} />
@@ -124,11 +124,12 @@ function VideoCallUI({ chatClient, channel }) {
         <div
           className={`
             flex flex-col
-            rounded-2xl
+            rounded-lg
             overflow-hidden
-            bg-[#272a30]
-            border border-[#3a3d44]
-            shadow-xl
+            bg-neutral
+            text-neutral-content
+            border border-neutral-content/15
+            shadow-sm
             transition-all
             duration-300
 
@@ -142,8 +143,8 @@ function VideoCallUI({ chatClient, channel }) {
           {isChatOpen && (
             <>
               {/* CHAT HEADER */}
-              <div className="bg-[#1c1e22] p-4 border-b border-[#3a3d44] flex items-center justify-between">
-                <h3 className="font-bold text-white">
+              <div className="flex items-center justify-between border-b border-neutral-content/15 bg-neutral px-4 py-3">
+                <h3 className="font-semibold text-neutral-content">
                   Session Chat
                 </h3>
 
@@ -151,7 +152,8 @@ function VideoCallUI({ chatClient, channel }) {
                   onClick={() =>
                     setIsChatOpen(false)
                   }
-                  className="text-gray-400 hover:text-white transition-colors"
+                  className="rounded-md p-1 text-neutral-content/70 transition-colors hover:bg-neutral-content/10 hover:text-neutral-content focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  aria-label="Close session chat"
                 >
                   <XIcon className="size-5" />
                 </button>
