@@ -1,11 +1,31 @@
 import Editor from "@monaco-editor/react";
-import {
-  Loader2Icon,
-  PlayIcon,
-  CircleDotIcon,
-  FileCode2Icon,
-} from "lucide-react";
+import { Loader2Icon, PlayIcon } from "lucide-react";
 import { LANGUAGE_CONFIG } from "../Data/problems";
+
+function defineEditorTheme(monaco) {
+  const tokens = getComputedStyle(document.documentElement);
+  const readToken = (name) => tokens.getPropertyValue(name).trim();
+  const background = readToken("--color-base-100");
+  const primary = readToken("--color-primary");
+
+  monaco.editor.defineTheme("midnight-emerald-editor", {
+    base: "vs-dark",
+    inherit: true,
+    rules: [],
+    colors: {
+      "editor.background": background,
+      "editorGutter.background": background,
+      "editorLineNumber.foreground": readToken("--cb-muted"),
+      "editorLineNumber.activeForeground": readToken("--color-base-content"),
+      "editorCursor.foreground": primary,
+      "editor.lineHighlightBackground": readToken("--color-base-200"),
+      "editor.selectionBackground": `${primary}55`,
+      "editor.inactiveSelectionBackground": `${primary}30`,
+      "editorIndentGuide.background1": readToken("--color-base-300"),
+      "editorOverviewRuler.border": readToken("--cb-border"),
+    },
+  });
+}
 
 function CodeEditorPanel({
   selectedLanguage,
@@ -15,154 +35,78 @@ function CodeEditorPanel({
   onCodeChange,
   onRunCode,
 }) {
+  const activeLanguage = LANGUAGE_CONFIG[selectedLanguage] || LANGUAGE_CONFIG.javascript;
+
   return (
-    <div className="h-full flex flex-col bg-base-100 rounded-[2rem] border border-base-content/10 overflow-hidden">
-
-      {/* HEADER */}
-      <div
-        className="
-          flex
-          items-center
-          justify-between
-          px-5
-          py-4
-          bg-base-100/80
-          backdrop-blur-xl
-          border-b
-          border-base-content/10
-        "
-      >
-        {/* LEFT */}
-        <div className="flex items-center gap-4">   
-
-          <div className="h-5 w-px bg-base-content/10 hidden md:block" />
-
-          {/* FILE INFO */}
-          <div className="flex items-center gap-2">
-            <div className="size-9 rounded-xl bg-primary/10 flex items-center justify-center">
-              <FileCode2Icon className="size-4 text-primary" />
-            </div>
-
-            <div>
-              <p className="text-sm font-semibold">
-                Code Workspace
-              </p>
-
-              <p className="text-xs text-base-content/50">
-                Write • Run • Iterate
-              </p>
-            </div>
-          </div>
+    <section className="cb-panel flex h-full min-h-0 flex-col overflow-hidden" aria-label="Code editor">
+      <header className="cb-panel-header flex flex-wrap items-center justify-between gap-2 px-3 py-2.5 sm:px-4">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="size-2 rounded-full bg-primary" aria-hidden="true" />
+          <h2 className="truncate text-sm font-semibold">Solution</h2>
+          <span className="hidden text-xs cb-muted sm:inline">{activeLanguage.name}</span>
         </div>
 
-        {/* RIGHT */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-1.5">
+          <div className="join border border-base-content/15" role="group" aria-label="Programming language">
+            {Object.entries(LANGUAGE_CONFIG).map(([key, language]) => (
+              <button
+                key={key}
+                type="button"
+                className={`join-item inline-flex min-h-8 items-center gap-1.5 px-2 text-xs font-medium transition-colors focus-visible:z-10 ${
+                  selectedLanguage === key
+                    ? "bg-primary text-primary-content"
+                    : "bg-base-300 cb-muted hover:border-primary/50 hover:text-base-content"
+                }`}
+                onClick={() => onLanguageChange(key)}
+                aria-pressed={selectedLanguage === key}
+                aria-label={`Switch to ${language.name}`}
+                disabled={isRunning}
+              >
+                <img src={language.icon} alt="" className="size-4" />
+                <span>{language.name}</span>
+              </button>
+            ))}
+          </div>
 
-{/* LANGUAGE SELECTOR */}
-<div className="flex items-center gap-2">
-  {Object.entries(LANGUAGE_CONFIG).map(([key, lang]) => (
-    <button
-      key={key}
-      onClick={() =>
-        onLanguageChange({
-          target: { value: key },
-        })
-      }
-      className={`
-        flex items-center gap-2 px-3 py-2 rounded-xl
-        transition-all duration-200
-        ${
-          selectedLanguage === key
-            ? "bg-primary text-primary-content"
-            : "bg-base-200 hover:bg-base-300"
-        }
-      `}
-    >
-      <img
-        src={lang.icon}
-        alt={lang.name}
-        className="size-6"
-      />
-      <span className="text-sm font-medium">
-        {lang.name}
-      </span>
-    </button>
-  ))}
-</div>
-
-          {/* RUN BUTTON */}
           <button
-            className="
-              btn
-              btn-primary
-              rounded-xl
-              gap-2
-              shadow-lg
-              hover:shadow-primary/20
-              transition-all
-              duration-300
-            "
+            type="button"
+            className="btn btn-primary btn-sm min-h-8 gap-1.5 px-3"
             disabled={isRunning}
             onClick={onRunCode}
+            aria-label={isRunning ? "Code is running" : "Run code"}
           >
-            {isRunning ? (
-              <>
-                <Loader2Icon className="size-4 animate-spin" />
-                Running...
-              </>
-            ) : (
-              <>
-                <PlayIcon className="size-4" />
-                Run Code
-              </>
-            )}
+            {isRunning ? <Loader2Icon className="size-4 animate-spin" aria-hidden="true" /> : <PlayIcon className="size-4" aria-hidden="true" />}
+            <span>{isRunning ? "Running" : "Run"}</span>
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* EDITOR */}
-      <div className="flex-1 bg-[#1e1e1e]">
+      <div className="min-h-0 flex-1 bg-base-100">
         <Editor
           height="100%"
-          language={LANGUAGE_CONFIG[selectedLanguage].monacoLang}
+          language={activeLanguage.monacoLang}
           value={code}
-          onChange={onCodeChange}
-          theme="vs-dark"
+          onChange={(value) => onCodeChange(value ?? "")}
+          theme="midnight-emerald-editor"
+          beforeMount={defineEditorTheme}
           options={{
-            fontSize: 15,
-            fontFamily: "JetBrains Mono, monospace",
-
-            minimap: {
-              enabled: false,
-            },
-
+            fontSize: 14,
+            fontFamily: "JetBrains Mono, Cascadia Code, monospace",
+            minimap: { enabled: false },
             scrollBeyondLastLine: false,
             automaticLayout: true,
             smoothScrolling: true,
-
             lineNumbers: "on",
-
             cursorBlinking: "smooth",
-
             renderLineHighlight: "all",
-
-            padding: {
-              top: 20,
-              bottom: 20,
-            },
-
+            padding: { top: 14, bottom: 14 },
             tabSize: 2,
-
             wordWrap: "on",
-
-            scrollbar: {
-              verticalScrollbarSize: 10,
-              horizontalScrollbarSize: 10,
-            },
+            scrollbar: { verticalScrollbarSize: 10, horizontalScrollbarSize: 10 },
           }}
         />
       </div>
-    </div>
+    </section>
   );
 }
 

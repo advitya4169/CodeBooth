@@ -1,200 +1,131 @@
-import {
-  ArrowRightIcon,
-  Code2Icon,
-  CrownIcon,
-  SparklesIcon,
-  UsersIcon,
-  ZapIcon,
-  LoaderIcon,
-} from "lucide-react";
+import { Activity, ArrowRight, Clock3, Users } from "lucide-react";
 import { Link } from "react-router";
+import { formatDistanceToNow } from "date-fns";
 import { getDifficultyBadgeClass } from "../lib/utils";
 
-function ActiveSessions({ sessions, isLoading, isError, error, onRetry }) {
+function SessionSkeleton() {
   return (
-    <div
-      className="
-        lg:col-span-2
-        rounded-3xl
-        border
-        border-base-content/10
-        bg-base-100/60
-        backdrop-blur-xl
-        shadow-xl
-        hover:shadow-2xl
-        transition-all
-        duration-300
-      "
-    >
-      <div className="p-6">
-        {/* HEADER */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <div className="size-12 rounded-2xl bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center shadow-lg">
-              <ZapIcon className="size-6 text-white" />
-            </div>
+    <li className="animate-pulse border-t border-base-content/10 px-4 py-4 sm:px-5" aria-hidden="true">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 flex-1 space-y-3">
+          <div className="h-4 w-48 rounded bg-base-300" />
+          <div className="h-3 w-64 max-w-full rounded bg-base-300" />
+        </div>
+        <div className="h-9 w-28 rounded-md bg-base-300" />
+      </div>
+    </li>
+  );
+}
 
-            <div>
-              <h2 className="text-3xl font-black">
-                Coding Arena
-              </h2>
-
-              <p className="text-sm text-base-content/60">
-                Join developers solving challenges in real time
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="size-3 rounded-full bg-success" />
-              <div className="absolute inset-0 size-3 rounded-full bg-success animate-ping" />
-            </div>
-
-            <span className="font-semibold text-success">
-              {sessions.length} Live
-            </span>
+function ActiveSessions({
+  sessions,
+  isLoading,
+  isError,
+  errorMessage,
+  onRetry,
+  isUserInSession,
+  onCreateSession,
+}) {
+  return (
+    <section className="cb-panel overflow-hidden" aria-labelledby="active-sessions-heading">
+      <header className="cb-panel-header flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-5">
+        <div className="flex items-center gap-3">
+          <span className="flex size-9 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <Activity className="size-[18px]" aria-hidden="true" />
+          </span>
+          <div>
+            <h2 id="active-sessions-heading" className="text-lg font-semibold tracking-tight">Active interviews</h2>
+            <p className="text-xs cb-muted">Join an open room or return to one of your sessions.</p>
           </div>
         </div>
+        {!isLoading && !isError && (
+          <span className="text-xs tabular-nums cb-muted">{sessions.length} {sessions.length === 1 ? "room" : "rooms"} listed</span>
+        )}
+      </header>
 
-        {/* CONTENT */}
-        <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-20">
-              <LoaderIcon className="size-10 animate-spin text-primary" />
-            </div>
-          ) : isError ? (
-            <div className="py-12 text-center" role="alert">
-              <h3 className="text-lg font-semibold">Couldn’t load active rooms</h3>
-              <p className="mt-2 text-sm text-base-content/60">
-                {error?.response?.data?.message || "Check your connection and try again."}
-              </p>
-              <button className="btn btn-outline btn-sm mt-4" onClick={() => onRetry()}>
-                Retry
-              </button>
-            </div>
-          ) : sessions.length > 0 ? (
-            sessions.map((session) => (
-              <div
-                key={session._id}
-                className="
-                  relative
-                  overflow-hidden
-                  rounded-2xl
-                  border
-                  border-base-content/10
-                  bg-base-200/40
-                  backdrop-blur-md
-                  hover:border-primary/40
-                  hover:-translate-y-1
-                  hover:shadow-lg
-                  transition-all
-                  duration-300
-                "
-              >
-                {/* Glow */}
-                <div className="absolute top-0 right-0 h-28 w-28 rounded-full bg-primary/10 blur-3xl" />
+      {isError && (
+        <div className="mx-4 mb-4 flex flex-col gap-3 rounded-md border border-error/25 bg-error/5 p-3 sm:mx-5 sm:flex-row sm:items-center sm:justify-between" role="alert">
+          <p className="text-sm text-base-content">{errorMessage}</p>
+          <button type="button" onClick={() => onRetry()} className="btn btn-sm btn-outline min-h-8 h-8 border-base-content/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+            Try again
+          </button>
+        </div>
+      )}
 
-                <div className="relative flex items-center justify-between gap-5 p-5">
-                  {/* LEFT */}
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <div className="relative size-14 rounded-2xl bg-gradient-to-br from-primary via-secondary to-accent flex items-center justify-center shadow-lg">
-                      <Code2Icon className="size-7 text-white" />
+      {isLoading ? (
+        <ul aria-label="Loading active interviews" aria-busy="true">
+          {[0, 1, 2].map((item) => <SessionSkeleton key={item} />)}
+        </ul>
+      ) : sessions.length > 0 ? (
+        <ul className="divide-y divide-base-content/10">
+          {sessions.map((session) => {
+            const isMine = isUserInSession(session);
+            const isFull = Boolean(session.participant);
+            const startedAt = session.createdAt ? new Date(session.createdAt) : null;
+            const startedLabel = startedAt && !Number.isNaN(startedAt.getTime())
+              ? formatDistanceToNow(startedAt, { addSuffix: true })
+              : null;
 
-                      <div className="absolute -top-1 -right-1 size-4 rounded-full bg-success border-2 border-base-100" />
+            return (
+              <li key={session._id} className="px-4 py-4 transition-colors hover:bg-base-300 sm:px-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="truncate text-sm font-semibold sm:text-base">{session.problem}</h3>
+                      <span className={`badge badge-sm ${getDifficultyBadgeClass(session.difficulty)}`}>
+                        {session.difficulty?.charAt(0).toUpperCase() + session.difficulty?.slice(1)}
+                      </span>
+                      <span className={`badge badge-sm ${isFull ? "badge-ghost" : "badge-success"}`}>
+                        {isFull ? "Full" : "Open"}
+                      </span>
+                      {isMine && <span className="badge badge-sm badge-outline">Your session</span>}
                     </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center flex-wrap gap-2 mb-2">
-                        <h3 className="font-bold text-lg truncate">
-                          {session.problem}
-                        </h3>
-
-                        <span
-                          className={`badge badge-sm ${getDifficultyBadgeClass(
-                            session.difficulty
-                          )}`}
-                        >
-                          {session.difficulty.charAt(0).toUpperCase() +
-                            session.difficulty.slice(1)}
+                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs cb-muted">
+                      <span className="inline-flex items-center gap-1.5">
+                        <Users className="size-3.5" aria-hidden="true" />
+                        Host: {session.host?.name || "Host"}
+                        {isFull ? " · 2 participants" : " · Waiting for partner"}
+                      </span>
+                      {startedLabel && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Clock3 className="size-3.5" aria-hidden="true" />
+                          Started {startedLabel}
                         </span>
-                      </div>
-
-                      <div className="flex items-center flex-wrap gap-4 text-sm text-base-content/70">
-                        <div className="flex items-center gap-1.5">
-                          <CrownIcon className="size-4" />
-                          <span>{session.host?.name}</span>
-                        </div>
-
-                        <div className="flex items-center gap-1.5">
-                          <UsersIcon className="size-4" />
-                          <span>
-                            {session.participant ? "2/2 Players" : "1/2 Players"}
-                          </span>
-                        </div>
-
-                        {session.participant && !session.isHost && !session.isParticipant ? (
-                          <span className="badge badge-error gap-1">
-                            🔒 Full
-                          </span>
-                        ) : (
-                          <span className="badge badge-success gap-1">
-                            🟢 Open
-                          </span>
-                        )}
-                      </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* RIGHT */}
-                  {session.participant && !session.isHost && !session.isParticipant ? (
-                    <button className="btn btn-disabled rounded-xl">
-                      Full
+                  {isFull && !isMine ? (
+                    <button type="button" className="btn btn-sm min-h-9 h-9 shrink-0" disabled aria-label={`Session full: ${session.problem}`}>
+                      Session full
                     </button>
                   ) : (
                     <Link
                       to={`/session/${session._id}`}
-                      className="
-                        btn
-                        btn-primary
-                        rounded-xl
-                        gap-2
-                        shadow-lg
-                        hover:shadow-primary/30
-                        hover:scale-105
-                        transition-all
-                        duration-200
-                      "
+                      className="btn btn-sm btn-primary min-h-9 h-9 shrink-0 gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                      aria-label={`${isMine ? "Rejoin" : "Join"} ${session.problem}`}
                     >
-                      {session.isHost || session.isParticipant
-                        ? "Rejoin"
-                        : "Join"}
-
-                      <ArrowRightIcon className="size-4" />
+                      {isMine ? "Rejoin" : "Join session"}
+                      <ArrowRight className="size-4" aria-hidden="true" />
                     </Link>
                   )}
                 </div>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-20 mt-20">
-              <div className="size-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                <SparklesIcon className="size-12 text-primary/60" />
-              </div>
-
-              <h3 className="text-2xl font-black mb-2">
-                Arena is Empty
-              </h3>
-
-              <p className="text-base-content/60 mb-6">
-                Create the first coding room and challenge another developer.
-              </p>
-
-            </div>
-          )}
+              </li>
+            );
+          })}
+        </ul>
+      ) : !isError ? (
+        <div className="border-t border-base-content/10 px-5 py-9 text-center">
+          <h3 className="text-base font-semibold">No active interviews</h3>
+          <p className="mx-auto mt-1 max-w-sm text-sm cb-muted">Create a room and invite someone to start a mock interview.</p>
+          <button type="button" onClick={onCreateSession} className="btn btn-sm btn-primary mt-4 min-h-9 h-9 gap-2">
+            Create session
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </button>
         </div>
-      </div>
-    </div>
+      ) : null}
+    </section>
   );
 }
 

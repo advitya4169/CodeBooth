@@ -20,6 +20,8 @@ function ProblemPage() {
   const [code, setCode] = useState(PROBLEMS[currentProblemId].starterCode.javascript);
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [resultStatus, setResultStatus] = useState("idle");
+  const [isNarrowViewport, setIsNarrowViewport] = useState(false);
 
   const currentProblem = PROBLEMS[currentProblemId];
 
@@ -29,14 +31,23 @@ function ProblemPage() {
       setCurrentProblemId(id);
       setCode(PROBLEMS[id].starterCode[selectedLanguage]);
       setOutput(null);
+      setResultStatus("idle");
     }
   }, [id, selectedLanguage]);
 
-  const handleLanguageChange = (e) => {
-    const newLang = e.target.value;
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const updateViewport = () => setIsNarrowViewport(mediaQuery.matches);
+    updateViewport();
+    mediaQuery.addEventListener("change", updateViewport);
+    return () => mediaQuery.removeEventListener("change", updateViewport);
+  }, []);
+
+  const handleLanguageChange = (newLang) => {
     setSelectedLanguage(newLang);
     setCode(currentProblem.starterCode[newLang]);
     setOutput(null);
+    setResultStatus("idle");
   };
 
   const handleProblemChange = (newProblemId) => navigate(`/problems/${newProblemId}`);
@@ -83,153 +94,93 @@ function ProblemPage() {
   const handleRunCode = async () => {
     setIsRunning(true);
     setOutput(null);
+    setResultStatus("running");
 
-    const result = await executeCode(selectedLanguage, code);
-    setOutput(result);
-    setIsRunning(false);
+    try {
+      const result = await executeCode(selectedLanguage, code);
+      setOutput(result);
 
-    // check if code executed successfully and matches expected output
+      if (!result.success) {
+        setResultStatus(result.kind || "execution-error");
+        toast.error(result.error || "Code execution failed.");
+        return;
+      }
 
-    if (result.success) {
-      const expectedOutput = currentProblem.expectedOutput[selectedLanguage];
-      console.log("Actual:", JSON.stringify(result.output));
-      console.log("Expected:", JSON.stringify(expectedOutput));
-      const testsPassed = checkIfTestsPassed(result.output, expectedOutput);
+      const expectedOutput = currentProblem.expectedOutput[selectedLanguage] || "";
+      const testsPassed = checkIfTestsPassed(result.output || "", expectedOutput);
+      setResultStatus(testsPassed ? "success" : "wrong-answer");
 
       if (testsPassed) {
         triggerConfetti();
-        toast.success("All tests passed! Great job!");
+        toast.success("All examples match.");
       } else {
-        toast.error("Tests failed. Check your output!");
+        toast.error("Output differs from the expected examples.");
       }
-    } else {
-      toast.error("Code execution failed!");
+    } catch {
+      const result = {
+        success: false,
+        kind: "network-error",
+        error: "The execution request could not be completed. Please try again.",
+      };
+      setOutput(result);
+      setResultStatus(result.kind);
+      toast.error(result.error);
+    } finally {
+      setIsRunning(false);
     }
   };
 
- return (
-  <div className="relative h-screen overflow-hidden bg-base-100 flex flex-col">
-    {/* BACKGROUND */}
-    <div className="absolute inset-0 -z-10 overflow-hidden">
-      <div className="absolute top-0 left-1/4 h-96 w-96 rounded-full bg-primary/10 blur-[140px]" />
+  const problemPanel = (
+    <ProblemDescription
+      problem={currentProblem}
+      currentProblemId={currentProblemId}
+      onProblemChange={handleProblemChange}
+      allProblems={Object.values(PROBLEMS)}
+    />
+  );
+  const editorPanel = (
+    <CodeEditorPanel
+      selectedLanguage={selectedLanguage}
+      code={code}
+      isRunning={isRunning}
+      onLanguageChange={handleLanguageChange}
+      onCodeChange={setCode}
+      onRunCode={handleRunCode}
+    />
+  );
+  const outputPanel = <OutputPanel output={output} isRunning={isRunning} resultStatus={resultStatus} />;
+  const resizeHandleClass = "group relative z-10 bg-base-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary data-[separator=horizontal]:h-2 data-[separator=vertical]:w-2";
 
-      <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-secondary/10 blur-[140px]" />
-
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--bc)/0.04)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--bc)/0.04)_1px,transparent_1px)] bg-[size:40px_40px]" />
-    </div>
-
-    <Navbar />
-
-    <div className="flex-1 p-4 lg:p-5 overflow-hidden">
-      <div
-        className="
-          h-full
-          rounded-[2rem]
-          border
-          border-base-content/10
-          bg-base-100/40
-          backdrop-blur-xl
-          overflow-hidden
-          shadow-2xl
-        "
-      >
-
-        <PanelGroup
-          direction="horizontal"
-          className="h-full"
-        >
-          {/* LEFT PANEL */}
-          <Panel defaultSize={40} minSize={30}>
-            <ProblemDescription
-              problem={currentProblem}
-              currentProblemId={currentProblemId}
-              onProblemChange={handleProblemChange}
-              allProblems={Object.values(PROBLEMS)}
-            />
-          </Panel>
-
-          {/* VERTICAL HANDLE */}
-          <PanelResizeHandle
-            className="
-              relative
-              w-[4px]
-              group
-              bg-transparent
-            "
-          >
-            <div
-              className="
-                absolute
-                inset-y-0
-                left-1/2
-                -translate-x-1/2
-                w-[1px]
-                bg-base-content/5
-                group-hover:bg-primary
-                transition-all
-                duration-300
-              "
-            />
-          </PanelResizeHandle>
-
-          {/* RIGHT PANEL */}
-          <Panel defaultSize={60} minSize={30}>
-            <PanelGroup
-              direction="vertical"
-              className="h-full"
-            >
-              {/* EDITOR */}
-              <Panel defaultSize={70} minSize={30}>
-                <div className="h-full p-3 pb-1">
-                  <CodeEditorPanel
-                    selectedLanguage={selectedLanguage}
-                    code={code}
-                    isRunning={isRunning}
-                    onLanguageChange={handleLanguageChange}
-                    onCodeChange={setCode}
-                    onRunCode={handleRunCode}
-                  />
-                </div>
-              </Panel>
-
-              {/* HORIZONTAL HANDLE */}
-              <PanelResizeHandle
-                className="
-                  relative
-                  h-[4px]
-                  group
-                  bg-transparent
-                "
-              >
-                <div
-                  className="
-                    absolute
-                    left-0
-                    right-0
-                    top-1/2
-                    -translate-y-1/2
-                    h-[1px]
-                    bg-base-content/5
-                    group-hover:bg-primary
-                    transition-all
-                    duration-300
-                  "
-                />
-              </PanelResizeHandle>
-
-              {/* OUTPUT */}
-              <Panel defaultSize={30} minSize={20}>
-                <div className="h-full p-3 pt-1">
-                  <OutputPanel output={output} />
-                </div>
+  return (
+    <div className="flex h-screen flex-col overflow-hidden bg-base-100">
+      <Navbar />
+      <main className="min-h-0 flex-1 overflow-hidden p-2 sm:p-3">
+        <div className="h-full overflow-hidden rounded-lg border border-[var(--cb-border)] bg-base-100">
+          {isNarrowViewport ? (
+            <PanelGroup direction="vertical" className="h-full">
+              <Panel defaultSize={35} minSize={22}>{problemPanel}</Panel>
+              <PanelResizeHandle className={`${resizeHandleClass} h-2 cursor-row-resize`} aria-label="Resize problem and editor panels" />
+              <Panel defaultSize={47} minSize={30}>{editorPanel}</Panel>
+              <PanelResizeHandle className={`${resizeHandleClass} h-2 cursor-row-resize`} aria-label="Resize editor and output panels" />
+              <Panel defaultSize={18} minSize={14}>{outputPanel}</Panel>
+            </PanelGroup>
+          ) : (
+            <PanelGroup direction="horizontal" className="h-full">
+              <Panel defaultSize={40} minSize={28}>{problemPanel}</Panel>
+              <PanelResizeHandle className={`${resizeHandleClass} w-2 cursor-col-resize`} aria-label="Resize problem and editor columns" />
+              <Panel defaultSize={60} minSize={38}>
+                <PanelGroup direction="vertical" className="h-full">
+                  <Panel defaultSize={70} minSize={30}>{editorPanel}</Panel>
+                  <PanelResizeHandle className={`${resizeHandleClass} h-2 cursor-row-resize`} aria-label="Resize editor and output panels" />
+                  <Panel defaultSize={30} minSize={18}>{outputPanel}</Panel>
+                </PanelGroup>
               </Panel>
             </PanelGroup>
-          </Panel>
-        </PanelGroup>
-      </div>
+          )}
+        </div>
+      </main>
     </div>
-  </div>
-);
+  );
 }
 
 export default ProblemPage;

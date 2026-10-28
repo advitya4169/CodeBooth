@@ -14,23 +14,36 @@ function CreateSessionModal({
   if (!isOpen) return null;
 
   return (
-    <div className="modal modal-open">
-      <div className="modal-box max-w-2xl">
-        <h3 className="font-bold text-2xl mb-6">Create New Session</h3>
+    <div
+      className="modal modal-open"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="create-session-title"
+      onKeyDown={(event) => {
+        if (event.key === "Escape") onClose();
+      }}
+    >
+      <div className="modal-box max-w-xl">
+        <h2 id="create-session-title" className="mb-1 text-xl font-semibold tracking-tight">Create a session</h2>
+        <p className="mb-5 text-sm cb-muted">Choose a problem for your 1-on-1 interview room.</p>
 
-        <div className="space-y-8">
+        <div className="space-y-6">
           {/* PROBLEM SELECTION */}
           <div className="space-y-2">
-            <label className="label">
-              <span className="label-text font-semibold">Select Problem</span>
-              <span className="label-text-alt text-error">*</span>
+            <label className="label" htmlFor="session-problem">
+              <span className="label-text font-semibold">Problem</span>
+              <span className="label-text-alt text-error">Required</span>
             </label>
 
             <select
-              className="select w-full"
+              id="session-problem"
+              autoFocus
+              required
+              className="select select-bordered w-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               value={roomConfig.problem}
               onChange={(e) => {
                 const selectedProblem = problems.find((p) => p.title === e.target.value);
+                if (!selectedProblem) return;
                 setRoomConfig({
                   difficulty: selectedProblem.difficulty,
                   problem: e.target.value,
@@ -51,10 +64,10 @@ function CreateSessionModal({
 
           {/* ROOM SUMMARY */}
           {roomConfig.problem && (
-            <div className="alert alert-success">
+            <div className="alert border border-primary/20 bg-primary/5 text-base-content">
               <Code2Icon className="size-5" />
               <div>
-                <p className="font-semibold">Room Summary:</p>
+                <p className="font-semibold">Session details</p>
                 <p>
                   Problem: <span className="font-medium">{roomConfig.problem}</span>
                 </p>
@@ -67,12 +80,13 @@ function CreateSessionModal({
         </div>
 
         <div className="modal-action">
-          <button className="btn btn-ghost" onClick={onClose}>
+          <button type="button" className="btn btn-ghost" onClick={onClose}>
             Cancel
           </button>
 
           <button
-            className="btn btn-primary gap-2"
+            type="button"
+            className="btn btn-primary gap-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             onClick={onCreateRoom}
             disabled={isCreating || !roomConfig.problem}
           >
@@ -86,7 +100,7 @@ function CreateSessionModal({
           </button>
         </div>
       </div>
-      <div className="modal-backdrop" onClick={onClose}></div>
+      <div className="modal-backdrop" onClick={onClose} role="presentation"></div>
     </div>
   );
 }

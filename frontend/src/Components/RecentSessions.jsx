@@ -1,206 +1,85 @@
-import {
-  Code2,
-  Clock,
-  Users,
-  Trophy,
-  Loader,
-  Sparkles,
-} from "lucide-react";
-import { getDifficultyBadgeClass } from "../lib/utils";
+import { Check, Clock3, History, Users } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { getDifficultyBadgeClass } from "../lib/utils";
 
-function RecentSessions({ sessions, isLoading, isError, error, onRetry }) {
+function RecentSessions({ sessions, isLoading, isError, errorMessage, onRetry }) {
   return (
-    <div
-      className="
-        mt-8
-        rounded-3xl
-        border
-        border-base-content/10
-        bg-base-100/60
-        backdrop-blur-xl
-        shadow-xl
-      "
-    >
-      <div className="p-6">
-        {/* HEADER */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <div className="size-12 rounded-2xl bg-gradient-to-br from-accent via-secondary to-primary flex items-center justify-center shadow-lg">
-              <Clock className="size-6 text-white" />
-            </div>
-
-            <div>
-              <h2 className="text-3xl font-black">
-                Session History
-              </h2>
-
-              <p className="text-sm text-base-content/60">
-                Track your coding battles and progress
-              </p>
-            </div>
-          </div>
-
+    <section className="cb-panel overflow-hidden" aria-labelledby="recent-sessions-heading">
+      <header className="cb-panel-header flex items-center gap-3 px-4 py-4 sm:px-5">
+        <span className="flex size-9 items-center justify-center rounded-md bg-base-200 cb-muted">
+          <History className="size-[18px]" aria-hidden="true" />
+        </span>
+        <div>
+          <h2 id="recent-sessions-heading" className="text-lg font-semibold tracking-tight">Recent sessions</h2>
+          <p className="text-xs cb-muted">Latest completed interviews</p>
         </div>
+      </header>
 
-        {/* GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {isLoading ? (
-            <div className="col-span-full flex items-center justify-center py-20">
-              <Loader className="size-10 animate-spin text-primary" />
-            </div>
-          ) : isError ? (
-            <div className="col-span-full py-12 text-center" role="alert">
-              <h3 className="text-lg font-semibold">Couldn’t load session history</h3>
-              <p className="mt-2 text-sm text-base-content/60">
-                {error?.response?.data?.message || "Check your connection and try again."}
-              </p>
-              <button className="btn btn-outline btn-sm mt-4" onClick={() => onRetry()}>
-                Retry
-              </button>
-            </div>
-          ) : sessions.length > 0 ? (
-            sessions.map((session) => (
-              <div
-                key={session._id}
-                className="
-                  relative
-                  overflow-hidden
-                  rounded-2xl
-                  border
-                  border-base-content/10
-                  bg-base-200/40
-                  backdrop-blur-md
-                  hover:border-primary/40
-                  hover:-translate-y-1
-                  hover:shadow-xl
-                  transition-all
-                  duration-300
-                "
-              >
-                {/* Glow */}
-                <div
-                  className={`
-                    absolute
-                    top-0
-                    right-0
-                    h-24
-                    w-24
-                    rounded-full
-                    blur-3xl
-                    ${
-                      session.status === "active"
-                        ? "bg-success/20"
-                        : "bg-primary/10"
-                    }
-                  `}
-                />
+      {isError && (
+        <div className="mx-4 mb-4 flex flex-col gap-3 rounded-md border border-error/25 bg-error/5 p-3 sm:mx-5 sm:flex-row sm:items-center sm:justify-between" role="alert">
+          <p className="text-sm text-base-content">{errorMessage}</p>
+          <button type="button" onClick={() => onRetry()} className="btn btn-sm btn-outline min-h-8 h-8 border-base-content/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+            Try again
+          </button>
+        </div>
+      )}
 
-                {/* ACTIVE BADGE */}
-                {session.status === "active" && (
-                  <div className="absolute top-4 right-4 z-10">
-                    <div className="badge badge-success gap-2">
-                      <div className="size-2 rounded-full bg-success animate-ping" />
-                      LIVE
-                    </div>
-                  </div>
-                )}
+      {isLoading ? (
+        <ul aria-label="Loading recent sessions" aria-busy="true">
+          {[0, 1].map((item) => (
+            <li key={item} aria-hidden="true" className="animate-pulse border-t border-base-content/10 px-4 py-4 sm:px-5">
+              <div className="h-4 w-44 rounded bg-base-300" />
+              <div className="mt-3 h-3 w-64 max-w-full rounded bg-base-300" />
+            </li>
+          ))}
+        </ul>
+      ) : sessions.length > 0 ? (
+        <ul className="divide-y divide-base-content/10">
+          {sessions.map((session) => {
+            const completedAt = session.updatedAt || session.createdAt;
+            const completedDate = completedAt ? new Date(completedAt) : null;
+            const completedLabel = completedDate && !Number.isNaN(completedDate.getTime())
+              ? formatDistanceToNow(completedDate, { addSuffix: true })
+              : null;
 
-                <div className="relative p-5">
-                  {/* TOP */}
-                  <div className="flex items-start gap-4 mb-5">
-                    <div
-                      className={`
-                        size-14
-                        rounded-2xl
-                        flex
-                        items-center
-                        justify-center
-                        shadow-lg
-                        ${
-                          session.status === "active"
-                            ? "bg-gradient-to-br from-success to-success/70"
-                            : "bg-gradient-to-br from-primary via-secondary to-accent"
-                        }
-                      `}
-                    >
-                      <Code2 className="size-7 text-white" />
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-lg truncate mb-2">
-                        {session.problem}
-                      </h3>
-
-                      <span
-                        className={`badge badge-sm ${getDifficultyBadgeClass(
-                          session.difficulty
-                        )}`}
-                      >
-                        {session.difficulty}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* INFO */}
-                  <div className="space-y-3 text-sm text-base-content/70 mb-5">
-                    <div className="flex items-center gap-2">
-                      <Clock className="size-4" />
-                      <span>
-                        {formatDistanceToNow(
-                          new Date(session.createdAt),
-                          { addSuffix: true }
-                        )}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Users className="size-4" />
-                      <span>
-                        {session.participant
-                          ? "2 Participants"
-                          : "1 Participant"}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* FOOTER */}
-                  <div className="pt-4 border-t border-base-content/10 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Trophy className="size-4 text-accent" />
-                      <span className="text-xs font-semibold uppercase">
-                        Completed
-                      </span>
-                    </div>
-
-                    <span className="text-xs text-base-content/50">
-                      {new Date(
-                        session.updatedAt
-                      ).toLocaleDateString()}
+            return (
+              <li key={session._id} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="truncate text-sm font-semibold sm:text-base">{session.problem}</h3>
+                    <span className={`badge badge-sm ${getDifficultyBadgeClass(session.difficulty)}`}>
+                      {session.difficulty?.charAt(0).toUpperCase() + session.difficulty?.slice(1)}
                     </span>
+                    <span className="badge badge-sm badge-ghost">Completed</span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs cb-muted">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Users className="size-3.5" aria-hidden="true" />
+                      {session.participant ? "2 participants" : "1 participant"}
+                    </span>
+                    {completedLabel && (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Clock3 className="size-3.5" aria-hidden="true" />
+                        Completed {completedLabel}
+                      </span>
+                    )}
                   </div>
                 </div>
-              </div>
-            ))
-          ) : (
-            <div className="col-span-full text-center py-24">
-              <div className="size-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-accent/20 to-secondary/20 flex items-center justify-center">
-                <Sparkles className="size-12 text-accent/60" />
-              </div>
-
-              <h3 className="text-2xl font-black mb-2">
-                No Coding History Yet
-              </h3>
-
-              <p className="text-base-content/60 mb-6">
-                Complete your first coding session and start building your journey.
-              </p>
-
-            </div>
-          )}
+                <span className="inline-flex items-center gap-1.5 self-start text-xs font-medium text-success sm:self-auto">
+                  <Check className="size-3.5" aria-hidden="true" />
+                  Complete
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      ) : !isError ? (
+        <div className="border-t border-base-content/10 px-5 py-8">
+          <p className="text-sm font-medium">No completed sessions yet</p>
+          <p className="mt-1 text-sm cb-muted">Completed interviews will appear here.</p>
         </div>
-      </div>
-    </div>
+      ) : null}
+    </section>
   );
 }
 
