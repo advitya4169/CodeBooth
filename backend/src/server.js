@@ -13,12 +13,18 @@ import codeExecutionRoutes from "./routes/codeExecutionRoutes.js";
 import http from "http";
 import { Server } from "socket.io";
 const app = express();
+// CLIENT_URL accepts one or more exact origins (comma-separated), so a
+// specific Vercel Preview can be enabled without allowing arbitrary origins.
+const clientOrigins = (ENV.CLIENT_URL || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 app.use(express.json());
 
 app.use(
   cors({
-    origin: ENV.CLIENT_URL,
+    origin: clientOrigins,
     credentials: true,
   })
 );
@@ -42,7 +48,7 @@ const server = http.createServer(app);
 
 export const io = new Server(server, {
   cors: {
-    origin: ENV.CLIENT_URL,
+    origin: clientOrigins,
     credentials: true,
   },
 });

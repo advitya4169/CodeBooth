@@ -7,7 +7,13 @@ export const useCreateSession = () => {
     mutationKey: ["createSession"],
     mutationFn: sessionApi.createSession,
     onSuccess: () => toast.success("Session created successfully!"),
-    onError: (error) => toast.error(error.response?.data?.message || "Failed to create room"),
+    onError: (error) => {
+      const message = error.response?.data?.message;
+      const fallback = error.response?.status
+        ? `Room creation failed (HTTP ${error.response.status})`
+        : "Could not reach the server. Check your connection and try again.";
+      toast.error(message || fallback);
+    },
   });
 
   return result;
