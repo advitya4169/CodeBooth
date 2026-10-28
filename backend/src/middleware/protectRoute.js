@@ -1,4 +1,6 @@
+import { clerkClient } from "@clerk/express";
 import User from "../models/User.js";
+import { ensureUserFromClerk } from "../lib/userProvisioning.js";
 
 export const protectRoute = [
     async (req,res,next)=>{
@@ -10,8 +12,14 @@ export const protectRoute = [
             if(!clerkId)
                 return res.status(401).json({message:"Authentication required"});
             //find user in db
-            const user = await User.findOne({clerkId});
-            if(!user) return res.status(404).json({message:"user not found"});
+            let user = await User.findOne({clerkId});
+            if(!user) {
+                // Clerk middleware has already verified this identity. Fetch
+                // its canonical profile and provision the local record if the
+                // asynchronous Inngest user.created event has not completed.
+                const clerkUser = await clerkClient.users.getUser(clerkId);
+                user = await ensureUserFromClerk(clerkUser);
+            }
             //attach user to request
             req.user=user
             next();

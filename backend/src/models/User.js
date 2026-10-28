@@ -16,7 +16,8 @@ const userSchema = new mongoose.Schema({
     },
     clerkId:{ //so that when a user logs in we know which user is it from the clerk dashboard
         type:String,
-        required:true
+        required:true,
+        unique:true
     }
 },{timestamps:true});//createdAt,updatedAt field will be added
 
