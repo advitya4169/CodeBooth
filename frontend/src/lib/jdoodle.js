@@ -1,9 +1,10 @@
 import axios from "axios";
+import { API_BASE_URL } from "./apiConfig";
 
 export const executeCode = async (language, code) => {
   try {
     const response = await axios.post(
-      `${import.meta.env.VITE_API_URL}/execute`,
+      `${API_BASE_URL}/execute`,
       {
         language:
           language === "python"

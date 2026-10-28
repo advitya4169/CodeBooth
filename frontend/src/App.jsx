@@ -9,9 +9,7 @@ import HomePage from "./Pages/HomePage";
 import ProblemPage from "./Pages/ProblemPage";
 import ProblemsPage from "./Pages/ProblemsPage";
 import SessionPage from "./Pages/SessionPage";
-import { socket } from "./lib/socket";
 const App = () => {
-  console.log("Socket state:", socket.connected);
   const { isSignedIn,isLoaded } = useUser();
   //this will get rid of the flickering effect
     if(!isLoaded)
