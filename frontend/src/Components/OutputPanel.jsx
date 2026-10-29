@@ -38,6 +38,46 @@ const STATUS = {
     icon: AlertCircleIcon,
     color: "text-error",
   },
+  "provider-auth-error": {
+    label: "Provider configuration error",
+    icon: AlertCircleIcon,
+    color: "text-error",
+  },
+  "provider-rate-limit": {
+    label: "Provider limit reached",
+    icon: AlertCircleIcon,
+    color: "text-error",
+  },
+  "provider-request-error": {
+    label: "Provider request error",
+    icon: AlertCircleIcon,
+    color: "text-error",
+  },
+  "provider-response-error": {
+    label: "Provider response error",
+    icon: AlertCircleIcon,
+    color: "text-error",
+  },
+  "provider-timeout": {
+    label: "Provider timeout",
+    icon: AlertCircleIcon,
+    color: "text-error",
+  },
+  "execution-unavailable": {
+    label: "Execution unavailable",
+    icon: AlertCircleIcon,
+    color: "text-error",
+  },
+  "invalid-request": {
+    label: "Invalid execution request",
+    icon: AlertCircleIcon,
+    color: "text-error",
+  },
+  "provider-network-error": {
+    label: "Connection error",
+    icon: AlertCircleIcon,
+    color: "text-error",
+  },
   "network-error": {
     label: "Connection error",
     icon: AlertCircleIcon,

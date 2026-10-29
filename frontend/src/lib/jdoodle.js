@@ -1,9 +1,9 @@
-import axios from "axios";
+import axiosInstance from "./axios";
 import { API_BASE_URL } from "./apiConfig";
 
 export const executeCode = async (language, code) => {
   try {
-    const response = await axios.post(
+    const response = await axiosInstance.post(
       `${API_BASE_URL}/execute`,
       {
         language:
@@ -45,7 +45,7 @@ export const executeCode = async (language, code) => {
 
     return {
       success: false,
-      kind: error.response ? "provider-error" : "network-error",
+      kind: error.response?.data?.kind || (error.response ? "provider-error" : "network-error"),
       output: error.response?.data?.output || "",
       error:
         error.response?.data?.message ||

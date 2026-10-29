@@ -1,4 +1,4 @@
-import { useUser } from "@clerk/clerk-react";
+import { useAuth, useUser } from "@clerk/clerk-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useEndSession, useJoinSession, useSessionById } from "../hooks/useSessions";
@@ -14,15 +14,22 @@ import useStreamClient from "../hooks/useStreamClient";
 import { StreamCall, StreamVideo } from "@stream-io/video-react-sdk";
 import VideoCallUI from "../Components/VideoCallUI";
 import { socket } from "../lib/socket";
+import { connectWithClerkToken, joinSessionOnConnect } from "../lib/sessionSocket";
 
 function SessionPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { user } = useUser();
+  const { getToken } = useAuth();
   const [output, setOutput] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
 
-  const { data: sessionData, isLoading: loadingSession, refetch } = useSessionById(id);
+  const {
+    data: sessionData,
+    isLoading: loadingSession,
+    error: sessionError,
+    refetch,
+  } = useSessionById(id);
 
   const joinSessionMutation = useJoinSession();
   const endSessionMutation = useEndSession();
@@ -71,12 +78,16 @@ function SessionPage() {
   }, [problemData, selectedLanguage]);
 
   useEffect(() => {
-  if (!id) return;
+    if (!id || (!isHost && !isParticipant)) return;
 
-  socket.emit("join-session", id);
+    const cleanupJoinListener = joinSessionOnConnect(socket, id);
+    connectWithClerkToken(socket, getToken);
 
-  console.log("Joined session:", id);
-}, [id]);
+    return () => {
+      cleanupJoinListener();
+      socket.disconnect();
+    };
+  }, [id, isHost, isParticipant, getToken]);
 useEffect(() => {
   socket.on("code-change", (newCode) => {
     setCode(newCode);
@@ -109,6 +120,38 @@ useEffect(() => {
       endSessionMutation.mutate(id, { onSuccess: () => navigate("/dashboard") });
     }
   };
+
+  if (!session && loadingSession) {
+    return (
+      <div className="flex h-screen flex-col bg-base-100">
+        <Navbar />
+        <main className="flex flex-1 items-center justify-center" role="status" aria-live="polite">
+          <div className="flex items-center gap-3 text-sm cb-muted">
+            <Loader2Icon className="size-5 animate-spin text-primary" aria-hidden="true" />
+            Loading interview room…
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!session) {
+    const message = sessionError?.response?.data?.message || "This interview room could not be loaded.";
+    return (
+      <div className="flex h-screen flex-col bg-base-100">
+        <Navbar />
+        <main className="flex flex-1 items-center justify-center p-4">
+          <section className="cb-panel w-full max-w-md p-6 text-center" role="alert">
+            <h1 className="text-lg font-semibold">Unable to open interview</h1>
+            <p className="mt-2 text-sm cb-muted">{message} If the service is waking up, wait a moment and retry.</p>
+            <button type="button" className="btn btn-primary btn-sm mt-4" onClick={() => refetch()}>
+              Try again
+            </button>
+          </section>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen bg-base-100 flex flex-col">

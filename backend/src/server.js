@@ -6,10 +6,12 @@ import {serve} from "inngest/express"
 import cors from "cors"
 import { inngest,functions } from "./lib/inngest.js";
 import { chatClient } from "./lib/stream.js";
-import { clerkMiddleware } from "@clerk/express";
+import { clerkClient, clerkMiddleware } from "@clerk/express";
 import chatRoutes from "./routes/chatRoutes.js";
 import sessionRoutes from "./routes/sessionRoutes.js";
 import codeExecutionRoutes from "./routes/codeExecutionRoutes.js";
+import Session from "./models/Session.js";
+import { createClerkSocketAuthMiddleware, registerSessionSocketHandlers } from "./lib/socketAuth.js";
 import http from "http";
 import { Server } from "socket.io";
 const app = express();
@@ -53,20 +55,8 @@ export const io = new Server(server, {
   },
 });
 
-io.on("connection", (socket) => {
-  console.log("Socket connected:", socket.id);
-
-  socket.on("join-session", (sessionId) => {
-    socket.join(sessionId);
-
-    console.log(
-      `Socket ${socket.id} joined session ${sessionId}`
-    );
-  });
-  socket.on("code-change", ({ sessionId, code }) => {
-  socket.to(sessionId).emit("code-change", code);
-});
-});
+io.use(createClerkSocketAuthMiddleware(clerkClient));
+registerSessionSocketHandlers(io, Session);
 
 // ================= START SERVER =================
 
